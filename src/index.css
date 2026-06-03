@@ -401,3 +401,39 @@ body {
 .fut-card-inner-clip {
   clip-path: polygon(9% 1%, 91% 1%, 99% 9%, 99% 84%, 84% 99%, 16% 99%, 1% 91%, 1% 9%);
 }
+
+@media (max-width: 900px) {
+  .aaa-starfield,
+  .aaa-starfield-fast,
+  .aaa-aurora {
+    animation-duration: 120s;
+    opacity: 0.1;
+  }
+
+  .btn-shimmer:hover::after {
+    animation-duration: 1.8s;
+  }
+
+  .aaa-card-entrance {
+    animation-duration: 1.2s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .aaa-starfield,
+  .aaa-starfield-fast,
+  .aaa-aurora,
+  .holo-border-glow,
+  .btn-shimmer:hover::after {
+    animation: none !important;
+  }
+}

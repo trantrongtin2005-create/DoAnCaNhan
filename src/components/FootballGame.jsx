@@ -34,6 +34,7 @@ export default function FootballGame({ onGoalScored }) {
   const [showExplosion, setShowExplosion] = useState(false);
   const [goalPos, setGoalPos] = useState({ x: 0, y: 0 });
   const [soundMuted, setSoundMuted] = useState(isMuted());
+  const [isLowPerfDevice, setIsLowPerfDevice] = useState(false);
 
   // Scoreboard Telemetry
   const [homeScore, setHomeScore] = useState(0);
@@ -118,6 +119,18 @@ export default function FootballGame({ onGoalScored }) {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [gameState]);
+
+  useEffect(() => {
+    const checkPerf = () => {
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const isMobile = window.matchMedia("(max-width: 900px)").matches || window.matchMedia("(pointer: coarse)").matches;
+      setIsLowPerfDevice(isMobile || prefersReducedMotion);
+    };
+
+    checkPerf();
+    window.addEventListener("resize", checkPerf);
+    return () => window.removeEventListener("resize", checkPerf);
+  }, []);
 
   // Setup Sizes
   useEffect(() => {
@@ -286,10 +299,9 @@ export default function FootballGame({ onGoalScored }) {
     playTransitionCelebration(); // trumpet fanfare, celebratory referee whistle
 
     setTimeout(() => {
-      // Golden Confetti blast!
       confetti({
-        particleCount: 220,
-        spread: 100,
+        particleCount: isLowPerfDevice ? 100 : 220,
+        spread: isLowPerfDevice ? 60 : 100,
         origin: { y: 0.55 },
         colors: ["#ffd700", "#ffffff", "#00f5ff", "#7b2fff", "#ff006e"]
       });
@@ -308,12 +320,19 @@ export default function FootballGame({ onGoalScored }) {
     const ctx = canvas.getContext("2d");
 
     let lastTime = performance.now();
+    let lastRender = lastTime;
+    const frameInterval = isLowPerfDevice ? 33.33 : 16.666;
 
     const loop = (currentTime) => {
-      let dt = (currentTime - lastTime) / 16.666; 
-      lastTime = currentTime;
+      if (currentTime - lastRender < frameInterval) {
+        animationFrameIdRef.current = requestAnimationFrame(loop);
+        return;
+      }
 
-      // Time dilation slow motion trigger
+      let dt = (currentTime - lastTime) / 16.666;
+      lastTime = currentTime;
+      lastRender = currentTime;
+
       let timeScale = 1.0;
       if (gameState === "shooting" && ballRef.current.y < 195 && ballRef.current.y > 105) {
         timeScale = 0.22;
@@ -348,7 +367,7 @@ export default function FootballGame({ onGoalScored }) {
       ctx.strokeStyle = "rgba(0, 245, 255, 0.05)";
       ctx.lineWidth = 1.0;
       
-      const gridCols = 18;
+      const gridCols = isLowPerfDevice ? 10 : 18;
       for (let i = 0; i <= gridCols; i++) {
         const xTop = (canvas.width / 2 - 180) + (360 / gridCols) * i;
         const xBottom = (canvas.width * 0.05) + (canvas.width * 0.9 / gridCols) * i;
@@ -358,7 +377,7 @@ export default function FootballGame({ onGoalScored }) {
         ctx.stroke();
       }
 
-      const gridRows = 9;
+      const gridRows = isLowPerfDevice ? 5 : 9;
       for (let i = 0; i <= gridRows; i++) {
         const ratio = i / gridRows;
         const y = 100 + (canvas.height - 100) * Math.pow(ratio, 1.45);
@@ -378,12 +397,14 @@ export default function FootballGame({ onGoalScored }) {
 
       // Penalty mark
       ctx.fillStyle = "#00f5ff";
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = "#00f5ff";
+      if (!isLowPerfDevice) {
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = "#00f5ff";
+      }
       ctx.beginPath();
       ctx.arc(canvas.width / 2, canvas.height - 60, 5, 0, Math.PI * 2);
       ctx.fill();
-      ctx.shadowBlur = 0;
+      if (!isLowPerfDevice) ctx.shadowBlur = 0;
     };
 
     const updateGoalkeeper = (canvas, dt) => {
@@ -396,7 +417,7 @@ export default function FootballGame({ onGoalScored }) {
       } else if (gameState === "shooting") {
         const diffX = targetX - goalie.x;
         if (Math.abs(diffX) > 4) {
-          goalie.x += Math.sign(diffX) * goalie.speed * 1.55 * dt;
+          goalie.x += Math.sign(diffX) * goalie.speed * (isLowPerfDevice ? 1.25 : 1.55) * dt;
         }
       }
     };
@@ -405,10 +426,15 @@ export default function FootballGame({ onGoalScored }) {
       const ball = ballRef.current;
       if (!ball.active) return;
 
-      // Dynamic motion blur trail calculations
-      ball.trail.push({ x: ball.x, y: ball.y, z: ball.z });
-      if (ball.trail.length > 18) {
-        ball.trail.shift();
+      if (!isLowPerfDevice) {
+        ball.trail.push({ x: ball.x, y: ball.y, z: ball.z });
+        if (ball.trail.length > 18) {
+          ball.trail.shift();
+        }
+      } else {
+        if (ball.trail.length > 6) {
+          ball.trail.shift();
+        }
       }
 
       ball.x += ball.vx * dt;
@@ -509,7 +535,7 @@ export default function FootballGame({ onGoalScored }) {
 
       // High-glow posts rendering
       ctx.save();
-      ctx.shadowBlur = 18;
+      ctx.shadowBlur = isLowPerfDevice ? 0 : 18;
       ctx.lineWidth = 5.5;
       ctx.lineCap = "round";
 
@@ -553,8 +579,10 @@ export default function FootballGame({ onGoalScored }) {
       ctx.fill();
 
       // Laser goalie styling
-      ctx.shadowBlur = 12;
-      ctx.shadowColor = "#bd00ff";
+      if (!isLowPerfDevice) {
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = "#bd00ff";
+      }
       ctx.lineCap = "round";
 
       if (isDiving) {
@@ -620,7 +648,7 @@ export default function FootballGame({ onGoalScored }) {
       ctx.fill();
 
       // Motion Blur Trails
-      if (b.trail.length > 1) {
+      if (!isLowPerfDevice && b.trail.length > 1) {
         ctx.save();
         ctx.shadowColor = "#ccff00";
         ctx.shadowBlur = 10;
@@ -642,8 +670,10 @@ export default function FootballGame({ onGoalScored }) {
 
       ctx.save();
       ctx.translate(b.x, b.y - b.z);
-      ctx.shadowColor = "#ccff00";
-      ctx.shadowBlur = b.active ? 18 : 5;
+      if (!isLowPerfDevice) {
+        ctx.shadowColor = "#ccff00";
+        ctx.shadowBlur = b.active ? 18 : 5;
+      }
 
       const scaleSize = Math.max(8, b.radius + b.z * 0.15);
       ctx.fillStyle = "#ffffff";
@@ -685,14 +715,16 @@ export default function FootballGame({ onGoalScored }) {
       const arrowY = ball.y + Math.sin(angle) * arrowLength;
 
       ctx.save();
-      ctx.shadowColor = "#ccff00";
-      ctx.shadowBlur = 12;
+      if (!isLowPerfDevice) {
+        ctx.shadowColor = "#ccff00";
+        ctx.shadowBlur = 12;
+      }
 
       const grad = ctx.createLinearGradient(ball.x, ball.y, arrowX, arrowY);
       grad.addColorStop(0, "rgba(0, 245, 255, 0.4)");
       grad.addColorStop(1, "#ccff00");
       ctx.strokeStyle = grad;
-      ctx.lineWidth = 5;
+      ctx.lineWidth = isLowPerfDevice ? 4 : 5;
       ctx.lineCap = "round";
 
       ctx.beginPath();
