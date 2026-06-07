@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, useMotionValue, useTransform, useSpring } from "framer-motion";
-import { FiCpu } from "react-icons/fi";
+import { FiCpu, FiUser } from "react-icons/fi";
+import { SiReact, SiLaravel, SiPhp, SiMysql, SiJavascript, SiGit } from "react-icons/si";
 import { playHoverSound } from "../utils/audioSynth";
 import playerPhoto from "../assets/tin.jpg";
 
@@ -16,11 +17,11 @@ export default function PlayerCard() {
   const y = useMotionValue(0);
 
   // Map motion values to tilt rotation degrees
-  const rotateX = useTransform(y, [-150, 150], [22, -22]);
-  const rotateY = useTransform(x, [-150, 150], [-22, 22]);
+  const rotateX = useTransform(y, [-150, 150], [18, -18]);
+  const rotateY = useTransform(x, [-150, 150], [-18, 18]);
 
   // Spring animations for a realistic physics-based kinetic inertia
-  const springConfig = { damping: 15, stiffness: 150, mass: 0.6 };
+  const springConfig = { damping: 20, stiffness: 200, mass: 0.5 };
   const springRotateX = useSpring(rotateX, springConfig);
   const springRotateY = useSpring(rotateY, springConfig);
 
@@ -60,78 +61,87 @@ export default function PlayerCard() {
     });
   };
 
-  // Six Ultimate Team attributes
-  const devStatsLeft = [
-    { label: "PAC", val: 99 },
-    { label: "SHO", val: 95 },
-    { label: "PAS", val: 98 }
+  // Real world tech skills mapping
+  const devSkills = [
+    { label: "FE", val: 95, name: "Frontend" },
+    { label: "BE", val: 90, name: "Backend" },
+    { label: "DB", val: 88, name: "Database" },
+    { label: "UI", val: 85, name: "UI/UX" },
+    { label: "SOLV", val: 92, name: "Problem Solving" },
+    { label: "TEAM", val: 95, name: "Teamwork" }
   ];
-  const devStatsRight = [
-    { label: "DRI", val: 99 },
-    { label: "DEF", val: 90 },
-    { label: "PHY", val: 92 }
+
+  // Tech stack items
+  const techStack = [
+    { name: "ReactJS", icon: SiReact, color: "text-[#00f5ff]" },
+    { name: "Laravel", icon: SiLaravel, color: "text-[#ff2d20]" },
+    { name: "PHP", icon: SiPhp, color: "text-[#777bb4]" },
+    { name: "MySQL", icon: SiMysql, color: "text-[#00758f]" },
+    { name: "JavaScript", icon: SiJavascript, color: "text-[#f7df1e]" },
+    { name: "Git", icon: SiGit, color: "text-[#f05032]" }
   ];
 
   return (
-    <div className="flex justify-center items-center py-6">
+    <div className="flex justify-center items-center py-4">
       <motion.div
         style={{
           rotateX: springRotateX,
           rotateY: springRotateY,
           transformStyle: "preserve-3d",
-          perspective: 1000,
+          perspective: 1200,
           ...holoStyle
         }}
         onMouseEnter={handleMouseEnter}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
-        className="relative w-76 h-112 sm:w-80 sm:h-120 cursor-grab active:cursor-grabbing group select-none transition-shadow duration-300 rounded-3xl aaa-card-entrance"
+        className="relative w-78 h-[490px] sm:w-[330px] sm:h-[530px] cursor-grab active:cursor-grabbing group select-none transition-shadow duration-300 rounded-[28px] aaa-card-entrance"
       >
-        {/* Glowing FUT outer backdrop shadow */}
-        <div className="absolute -inset-2 rounded-3xl bg-gradient-to-r from-[#bd00ff] via-[#00f5ff] to-[#ffd700] opacity-40 blur-2xl group-hover:opacity-80 group-hover:blur-3xl transition-all duration-500" />
+        {/* Glowing FUT outer backdrop shadow - soft cyan & purple */}
+        <div className="absolute -inset-1.5 rounded-[28px] bg-gradient-to-r from-[#7b2fff]/30 via-[#00f5ff]/20 to-[#ffd700]/10 opacity-30 blur-xl group-hover:opacity-60 group-hover:blur-2xl transition-all duration-500" />
 
         {/* Dynamic Rainbow Edge Reflective Border */}
         <div className="holo-border-glow" />
 
         {/* FUT Card Outer Shield (Standard FUT 24 Card Shape) */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#bd00ff] via-[#00f5ff] to-[#ffd700] p-[2.5px] fut-card-clip transition-all duration-300">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#00f5ff]/40 via-[#7b2fff]/30 to-[#ffd700]/20 p-[2px] fut-card-clip transition-all duration-300">
           
-          {/* Inner Card Shell */}
-          <div className="absolute inset-[2.5px] bg-[#0c0d13] fut-card-inner-clip flex flex-col p-5 fc-slanted-bg overflow-hidden justify-between">
+          {/* Inner Card Shell - Premium Glassmorphism */}
+          <div className="absolute inset-[2px] bg-[#090b11]/92 backdrop-blur-xl fut-card-inner-clip flex flex-col p-4 sm:p-5 overflow-hidden justify-between border border-white/5">
             
-            {/* Telemetry abstract lines */}
-            <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,245,255,0.015)_1px,transparent_1px)] bg-[size:100%_4px] pointer-events-none" />
+            {/* Tech grid mesh backdrop */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,245,255,0.012)_1px,transparent_1px)] bg-[size:100%_6px] pointer-events-none" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(123,47,255,0.08)_0%,transparent_60%)] pointer-events-none" />
 
             {/* True Interactive Holographic Foil Layer */}
             <div className="holo-shine-layer" />
 
-            {/* Floating Gold Dust Aura */}
-            <div className="absolute inset-0 z-0 pointer-events-none bg-[radial-gradient(ellipse_at_bottom,rgba(255,215,0,0.06)_0%,transparent_70%)] animate-pulse" />
-
-            {/* Top Row: Overall Rating & Position */}
-            <div className="flex justify-between items-start pt-4 relative z-20" style={{ transform: "translateZ(30px)" }}>
+            {/* Top Row: Overall Rating & Job Title */}
+            <div className="flex justify-between items-start pt-2 relative z-20" style={{ transform: "translateZ(30px)" }}>
               <div className="flex flex-col items-center">
-                <span className="font-display text-4xl sm:text-5xl font-black text-[#ffd700] text-glow-gold leading-none drop-shadow-[0_0_12px_rgba(255,215,0,0.6)]">
+                <span className="font-display text-4xl sm:text-5xl font-black bg-gradient-to-r from-[#ffd700] to-[#ffffff] bg-clip-text text-transparent text-glow-gold leading-none drop-shadow-[0_0_8px_rgba(255,215,0,0.4)]">
                   99
                 </span>
-                <span className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-                  DEV
+                <span className="font-mono text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                  OVR
                 </span>
-                <div className="w-6 h-[1.5px] bg-[#00f5ff]/40 my-1.5" />
-                <span className="text-lg font-mono text-[#00f5ff] text-glow-cyan font-bold">VN</span>
+                <div className="w-6 h-[1px] bg-[#00f5ff]/30 my-1" />
+                <span className="text-xs font-mono text-[#00f5ff] text-glow-cyan font-bold tracking-wider">FS</span>
               </div>
               
-              <div className="flex flex-col items-center gap-1">
-                <div className="w-9 h-9 rounded-full bg-white/5 border border-[#bd00ff]/20 flex items-center justify-center">
-                  <FiCpu size={16} className="text-[#00f5ff] animate-pulse drop-shadow-[0_0_6px_#00f5ff]" />
+              <div className="flex flex-col items-end gap-1">
+                <div className="flex items-center gap-1 bg-white/5 border border-white/10 px-2 py-0.5 rounded-md backdrop-blur-sm">
+                  <FiCpu size={11} className="text-[#00f5ff] animate-pulse" />
+                  <span className="text-[9px] font-mono text-slate-300 font-semibold tracking-wider">VN / DEV</span>
                 </div>
-                <span className="text-[9px] font-mono text-slate-400 font-semibold">TDC</span>
+                <span className="text-[8px] font-mono text-[#bd00ff] font-bold uppercase tracking-widest bg-[#bd00ff]/10 border border-[#bd00ff]/20 px-1.5 py-0.5 rounded mt-1">
+                  GOAT
+                </span>
               </div>
             </div>
 
-            {/* Center Row: Premium Football Game Player Card Image styling */}
+            {/* Avatar section - High tech framing */}
             <div 
-              className="absolute top-4 right-1 w-[180px] h-[210px] sm:w-[190px] sm:h-[230px] z-10 pointer-events-none overflow-hidden" 
+              className="absolute top-4 right-2 w-[180px] h-[210px] sm:w-[195px] sm:h-[235px] z-10 pointer-events-none overflow-hidden" 
               style={{ 
                 transform: "translateZ(45px)",
                 maskImage: "radial-gradient(circle at 45% 38%, black 45%, rgba(0,0,0,0.6) 65%, rgba(0,0,0,0.15) 80%, transparent 100%)",
@@ -140,57 +150,62 @@ export default function PlayerCard() {
             >
               <img 
                 src={playerPhoto} 
-                alt="Player Card Avatar"
-                className="w-full h-full object-cover object-[30%_18%] scale-110 contrast-[1.08] brightness-[1.02] saturate-[1.05] drop-shadow-[0_0_15px_rgba(0,245,255,0.4)]"
+                alt="Avatar"
+                className="w-full h-full object-cover object-[30%_18%] scale-105 contrast-[1.08] brightness-[1.02] saturate-[1.05] drop-shadow-[0_0_12px_rgba(0,245,255,0.3)] transition-transform duration-300 group-hover:scale-110"
               />
             </div>
 
             {/* Spacer for player image positioning */}
-            <div className="h-24 sm:h-28" />
+            <div className="h-28 sm:h-32" />
 
-            {/* Player Name Banner */}
-            <div className="text-center relative z-20 mt-4" style={{ transform: "translateZ(35px)" }}>
-              <h3 className="fc-title-slanted text-2xl sm:text-3xl font-black text-white text-glow-cyan tracking-widest drop-shadow-[0_0_8px_rgba(0,245,255,0.3)]">
-                TÍN
+            {/* Name Banner & Description */}
+            <div className="text-center relative z-20 mt-2" style={{ transform: "translateZ(35px)" }}>
+              <h3 className="fc-title-slanted text-xl sm:text-2xl font-black text-white text-glow-cyan tracking-wider drop-shadow-[0_0_8px_rgba(0,245,255,0.3)]">
+                TRẦN TRỌNG TÍN
               </h3>
-              <div className="w-36 h-[2px] bg-gradient-to-r from-transparent via-[#ffd700] to-transparent mx-auto my-2" />
+              <p className="text-[8px] font-mono text-[#00f5ff] tracking-widest uppercase mt-0.5 font-bold">
+                Fullstack Developer
+              </p>
+              <div className="w-28 h-[1px] bg-gradient-to-r from-transparent via-[#00f5ff]/40 to-transparent mx-auto my-1.5" />
             </div>
 
-            {/* Six Football Card Attributes */}
+            {/* Real World Technical Skills Grid */}
             <div 
-              className="grid grid-cols-2 gap-x-6 gap-y-1 pt-3 pb-3 relative z-20 border border-white/5 bg-black/60 p-3 rounded-xl border-cyan-500/10 text-center"
+              className="grid grid-cols-3 gap-x-2 gap-y-2 pt-2.5 pb-2.5 relative z-20 border border-white/5 bg-black/60 p-2 sm:p-2.5 rounded-xl border-cyan-500/10 text-center"
               style={{ transform: "translateZ(25px)" }}
             >
-              <div className="grid grid-cols-3 divide-x divide-white/5">
-                {devStatsLeft.map((stat, idx) => (
-                  <div key={idx} className="flex flex-col items-center">
-                    <span className="text-[9px] font-mono text-slate-400 font-semibold tracking-wider">
-                      {stat.label}
-                    </span>
-                    <span className="text-lg font-display font-black text-[#ffd700] text-glow-gold drop-shadow-[0_0_8px_#ffd700] mt-0.5">
-                      {stat.val}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <div className="grid grid-cols-3 divide-x divide-white/5">
-                {devStatsRight.map((stat, idx) => (
-                  <div key={idx} className="flex flex-col items-center">
-                    <span className="text-[9px] font-mono text-slate-400 font-semibold tracking-wider">
-                      {stat.label}
-                    </span>
-                    <span className="text-lg font-display font-black text-[#ffd700] text-glow-gold drop-shadow-[0_0_8px_#ffd700] mt-0.5">
-                      {stat.val}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              {devSkills.map((skill, idx) => (
+                <div key={idx} className="flex flex-col items-center justify-center">
+                  <span className="text-[8px] font-mono text-slate-400 font-bold uppercase tracking-wider" title={skill.name}>
+                    {skill.label}
+                  </span>
+                  <span className="text-sm sm:text-base font-display font-black text-[#ffd700] text-glow-gold mt-0.5">
+                    {skill.val}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Cyberpunk Tech Stack Badges */}
+            <div 
+              className="grid grid-cols-3 gap-1 relative z-20 pt-1"
+              style={{ transform: "translateZ(20px)" }}
+            >
+              {techStack.map((tech, idx) => (
+                <div 
+                  key={idx} 
+                  className="flex items-center gap-1 bg-white/5 border border-white/10 p-1 rounded-md text-[8px] sm:text-[9px] font-mono font-medium text-slate-300 backdrop-blur-sm justify-center group-hover:border-[#00f5ff]/30 transition-all duration-300"
+                >
+                  <tech.icon className={`${tech.color} text-[9px] sm:text-[11px]`} />
+                  <span className="truncate">{tech.name}</span>
+                </div>
+              ))}
             </div>
 
             {/* Micro chip telemetry detail */}
-            <div className="flex justify-between items-center text-[8px] font-mono text-slate-500 relative z-20 px-2 pb-1">
-              <span>GOAT EDITION</span>
-              <span>VER: 2026.TDC</span>
+            <div className="flex justify-between items-center text-[7px] font-mono text-slate-500 relative z-20 px-1 pt-1.5 border-t border-white/5">
+              <span>PORTFOLIO CORE v2.0</span>
+              <span>DEV STATUS: ACTIVE</span>
             </div>
 
           </div>
