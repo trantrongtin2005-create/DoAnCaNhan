@@ -2,11 +2,29 @@
 // Ensures 100% offline functionality with zero external audio assets
 
 let audioCtx = null;
+let masterGain = null;
+let analyser = null;
 let muted = false;
+let volume = 0.8;
+let synthWaveform = "sine";
 
-// Initialize mute state from localStorage
+// Initialize state from localStorage
 try {
   muted = localStorage.getItem("sound_muted") === "true";
+} catch (e) {}
+
+try {
+  const savedVol = localStorage.getItem("sound_volume");
+  if (savedVol !== null) {
+    volume = parseFloat(savedVol);
+  }
+} catch (e) {}
+
+try {
+  const savedWave = localStorage.getItem("sound_waveform");
+  if (savedWave !== null) {
+    synthWaveform = savedWave;
+  }
 } catch (e) {}
 
 export function isMuted() {
@@ -24,15 +42,63 @@ export function toggleMute() {
   return muted;
 }
 
+export function getVolume() {
+  return volume;
+}
+
+export function setVolume(vol) {
+  volume = Math.max(0, Math.min(1, vol));
+  if (masterGain && audioCtx) {
+    masterGain.gain.setValueAtTime(volume, audioCtx.currentTime);
+  }
+  try {
+    localStorage.setItem("sound_volume", volume.toString());
+  } catch (e) {}
+}
+
+export function getWaveform() {
+  return synthWaveform;
+}
+
+export function setWaveform(wave) {
+  synthWaveform = wave;
+  try {
+    localStorage.setItem("sound_waveform", wave);
+  } catch (e) {}
+}
+
+export function getAnalyser() {
+  if (!audioCtx) initAudio();
+  return analyser;
+}
+
 function initAudio() {
   if (muted) return null;
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    masterGain = audioCtx.createGain();
+    masterGain.gain.setValueAtTime(volume, audioCtx.currentTime);
+    
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    
+    masterGain.connect(analyser);
+    analyser.connect(audioCtx.destination);
   }
   if (audioCtx.state === "suspended") {
     audioCtx.resume();
   }
   return audioCtx;
+}
+
+// Connect helper to route audio through master control pipeline
+function connectToDestination(node, ctx) {
+  if (masterGain) {
+    node.connect(masterGain);
+  } else {
+    node.connect(ctx.destination);
+  }
 }
 
 // 1. Synthesize a professional double referee whistle blast
@@ -64,7 +130,7 @@ export function playWhistle() {
 
       osc1.connect(gainNode);
       osc2.connect(gainNode);
-      gainNode.connect(ctx.destination);
+      connectToDestination(gainNode, ctx);
 
       osc1.start(startTime);
       osc2.start(startTime);
@@ -114,7 +180,7 @@ export function playCrowdGoal() {
 
     noiseSource.connect(filter);
     filter.connect(gainNode);
-    gainNode.connect(ctx.destination);
+    connectToDestination(gainNode, ctx);
     noiseSource.start(now);
     noiseSource.stop(now + duration);
 
@@ -142,7 +208,7 @@ export function playCrowdGoal() {
       chantGain.gain.exponentialRampToValueAtTime(0.001, now + time + 0.45); 
 
       chantGain.connect(chantFilter);
-      chantFilter.connect(ctx.destination);
+      connectToDestination(chantFilter, ctx);
 
       oscs.forEach((osc) => {
         osc.start(now + time);
@@ -172,7 +238,7 @@ export function playExplosionSound() {
     subGain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
     
     subOsc.connect(subGain);
-    subGain.connect(ctx.destination);
+    connectToDestination(subGain, ctx);
     subOsc.start(now);
     subOsc.stop(now + 1.8);
 
@@ -197,7 +263,7 @@ export function playExplosionSound() {
 
     noise.connect(noiseFilter);
     noiseFilter.connect(noiseGain);
-    noiseGain.connect(ctx.destination);
+    connectToDestination(noiseGain, ctx);
 
     noise.start(now);
     noise.stop(now + 2.2);
@@ -235,7 +301,7 @@ export function playExplosionSound() {
       osc1.connect(hornGain);
       osc2.connect(hornGain);
       hornGain.connect(bandpass);
-      bandpass.connect(ctx.destination);
+      connectToDestination(bandpass, ctx);
 
       lfo.start(now + time);
       osc1.start(now + time);
@@ -273,7 +339,7 @@ export function playKickSound() {
     gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
     
     osc.connect(gainNode);
-    gainNode.connect(ctx.destination);
+    connectToDestination(gainNode, ctx);
     osc.start(now);
     osc.stop(now + 0.16);
 
@@ -297,7 +363,7 @@ export function playKickSound() {
 
     noise.connect(filter);
     filter.connect(noiseGain);
-    noiseGain.connect(ctx.destination);
+    connectToDestination(noiseGain, ctx);
     
     noise.start(now);
     noise.stop(now + 0.08);
@@ -333,7 +399,7 @@ export function playSlowMoSound() {
 
     osc.connect(filter);
     filter.connect(gain);
-    gain.connect(ctx.destination);
+    connectToDestination(gain, ctx);
 
     osc.start(now);
     osc.stop(now + 0.75);
@@ -350,7 +416,7 @@ export function playLightningZap() {
     if (!ctx) return;
     const now = ctx.currentTime;
 
-    const playCrackle = (time, duration, volume) => {
+    const playCrackle = (time, duration, volumeVal) => {
       const bufferSize = ctx.sampleRate * duration;
       const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
       const data = buffer.getChannelData(0);
@@ -365,12 +431,12 @@ export function playLightningZap() {
       filter.frequency.setValueAtTime(3200, now + time);
 
       const gainNode = ctx.createGain();
-      gainNode.gain.setValueAtTime(volume, now + time);
+      gainNode.gain.setValueAtTime(volumeVal, now + time);
       gainNode.gain.exponentialRampToValueAtTime(0.001, now + time + duration);
 
       noise.connect(filter);
       filter.connect(gainNode);
-      gainNode.connect(ctx.destination);
+      connectToDestination(gainNode, ctx);
       noise.start(now + time);
       noise.stop(now + time + duration);
     };
@@ -397,7 +463,7 @@ export function playLightningZap() {
 
     osc.connect(filter);
     filter.connect(gain);
-    gain.connect(ctx.destination);
+    connectToDestination(gain, ctx);
     
     osc.start(now);
     osc.stop(now + 0.4);
@@ -440,7 +506,7 @@ export function startPackOpeningLoop() {
 
     noiseSource.connect(noiseFilter);
     noiseFilter.connect(noiseGain);
-    noiseGain.connect(ctx.destination);
+    connectToDestination(noiseGain, ctx);
     noiseSource.start(now);
 
     const humOsc = ctx.createOscillator();
@@ -452,7 +518,7 @@ export function startPackOpeningLoop() {
     humGain.gain.linearRampToValueAtTime(0.4, now + 1.2);
 
     humOsc.connect(humGain);
-    humGain.connect(ctx.destination);
+    connectToDestination(humGain, ctx);
     humOsc.start(now);
 
     activePackLoop = {
@@ -510,7 +576,7 @@ export function playTransitionCelebration() {
       gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
 
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      connectToDestination(gain, ctx);
       osc.start(startTime);
       osc.stop(startTime + duration);
     };
@@ -522,7 +588,7 @@ export function playTransitionCelebration() {
     const playChime = (startTime, freq) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = "sine";
+      osc.type = synthWaveform;
       osc.frequency.setValueAtTime(freq, startTime);
       
       gain.gain.setValueAtTime(0, startTime);
@@ -530,7 +596,7 @@ export function playTransitionCelebration() {
       gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.45);
 
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      connectToDestination(gain, ctx);
       osc.start(startTime);
       osc.stop(startTime + 0.45);
     };
@@ -561,7 +627,7 @@ export function playTransitionCelebration() {
 
     noise.connect(filter);
     filter.connect(gainNode);
-    gainNode.connect(ctx.destination);
+    connectToDestination(gainNode, ctx);
     noise.start(now);
     noise.stop(now + 2.5);
 
@@ -581,7 +647,7 @@ export function playBeepSound() {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
-    osc.type = "sine";
+    osc.type = synthWaveform;
     osc.frequency.setValueAtTime(1400, now);
     osc.frequency.exponentialRampToValueAtTime(900, now + 0.08);
 
@@ -589,7 +655,7 @@ export function playBeepSound() {
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    connectToDestination(gain, ctx);
 
     osc.start(now);
     osc.stop(now + 0.08);
@@ -610,7 +676,7 @@ export function playHoverSound() {
     const gain = ctx.createGain();
     const filter = ctx.createBiquadFilter();
 
-    osc.type = "triangle";
+    osc.type = synthWaveform;
     osc.frequency.setValueAtTime(150, now);
     osc.frequency.exponentialRampToValueAtTime(450, now + 0.12);
 
@@ -622,7 +688,7 @@ export function playHoverSound() {
 
     osc.connect(filter);
     filter.connect(gain);
-    gain.connect(ctx.destination);
+    connectToDestination(gain, ctx);
 
     osc.start(now);
     osc.stop(now + 0.12);
@@ -648,7 +714,7 @@ export function playBassKick() {
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    connectToDestination(gain, ctx);
 
     osc.start(now);
     osc.stop(now + 0.25);
@@ -672,19 +738,19 @@ export function playCountdownSound(num) {
     subGain.gain.setValueAtTime(0.7, now);
     subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
     subOsc.connect(subGain);
-    subGain.connect(ctx.destination);
+    connectToDestination(subGain, ctx);
     subOsc.start(now);
     subOsc.stop(now + 0.3);
 
     // High warning chime
     const chime = ctx.createOscillator();
     const chimeGain = ctx.createGain();
-    chime.type = "sine";
+    chime.type = synthWaveform;
     chime.frequency.setValueAtTime(num === 1 ? 1600 : 880, now);
     chimeGain.gain.setValueAtTime(0.2, now);
     chimeGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
     chime.connect(chimeGain);
-    chimeGain.connect(ctx.destination);
+    connectToDestination(chimeGain, ctx);
     chime.start(now);
     chime.stop(now + 0.25);
 
@@ -704,7 +770,7 @@ export function playNotificationChime(type = "info") {
       const playTone = (freq, delay, duration, vol = 0.15) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-        osc.type = "sine";
+        osc.type = synthWaveform;
         osc.frequency.setValueAtTime(freq, now + delay);
         
         // Add subtle vibrato
@@ -720,7 +786,7 @@ export function playNotificationChime(type = "info") {
         gain.gain.exponentialRampToValueAtTime(0.001, now + delay + duration);
         
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        connectToDestination(gain, ctx);
         
         vibrato.start(now + delay);
         osc.start(now + delay);
@@ -748,8 +814,8 @@ export function playNotificationChime(type = "info") {
         const osc2 = ctx.createOscillator();
         const gain = ctx.createGain();
         
-        osc1.type = "triangle";
-        osc2.type = "triangle";
+        osc1.type = synthWaveform === "sine" ? "triangle" : synthWaveform; // triangle fits warn well, but support customizing
+        osc2.type = synthWaveform === "sine" ? "triangle" : synthWaveform;
         osc1.frequency.setValueAtTime(freq, now + delay);
         osc2.frequency.setValueAtTime(freq + 4, now + delay); // Detuning
         
@@ -759,7 +825,7 @@ export function playNotificationChime(type = "info") {
         
         osc1.connect(gain);
         osc2.connect(gain);
-        gain.connect(ctx.destination);
+        connectToDestination(gain, ctx);
         
         osc1.start(now + delay);
         osc2.start(now + delay);
@@ -774,7 +840,7 @@ export function playNotificationChime(type = "info") {
       const playInfoTone = (freq, delay, duration) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-        osc.type = "sine";
+        osc.type = synthWaveform;
         osc.frequency.setValueAtTime(freq, now + delay);
         
         gain.gain.setValueAtTime(0, now + delay);
@@ -782,7 +848,7 @@ export function playNotificationChime(type = "info") {
         gain.gain.exponentialRampToValueAtTime(0.001, now + delay + duration);
         
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        connectToDestination(gain, ctx);
         
         osc.start(now + delay);
         osc.stop(now + delay + duration);

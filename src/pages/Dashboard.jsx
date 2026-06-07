@@ -1,10 +1,30 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiAward, FiUser, FiSliders, FiCalendar, FiTrendingUp, FiSend, FiCheckCircle, FiExternalLink, FiGithub, FiArrowRight, FiBell, FiVolume2, FiVolumeX, FiSettings, FiActivity } from "react-icons/fi";
+import { FiAward, FiUser, FiSliders, FiCalendar, FiTrendingUp, FiSend, FiCheckCircle, FiExternalLink, FiGithub, FiArrowRight, FiBell, FiVolume2, FiVolumeX, FiSettings, FiActivity, FiMusic } from "react-icons/fi";
 import { profileData } from "../data/profileData";
 import PlayerCard from "../components/PlayerCard";
 import confetti from "canvas-confetti";
-import { playWhistle, playCrowdGoal, playBeepSound, playHoverSound, playTransitionCelebration, toggleMute, isMuted } from "../utils/audioSynth";
+import { 
+  playWhistle, 
+  playCrowdGoal, 
+  playBeepSound, 
+  playHoverSound, 
+  playTransitionCelebration, 
+  toggleMute, 
+  isMuted,
+  playExplosionSound,
+  playKickSound,
+  playSlowMoSound,
+  playLightningZap,
+  playBassKick,
+  playCountdownSound,
+  playNotificationChime,
+  getVolume,
+  setVolume,
+  getWaveform,
+  setWaveform,
+  getAnalyser
+} from "../utils/audioSynth";
 import { useVibelyNotifications } from "../components/VibelyNotificationProvider";
 
 // High-fidelity count up text with easing for stat count-up
@@ -44,6 +64,10 @@ export default function Dashboard() {
   
   // Track mute state locally to trigger re-renders
   const [soundMuted, setSoundMuted] = useState(isMuted());
+  const [volumeLevel, setVolumeLevel] = useState(getVolume());
+  const [waveform, setWaveformState] = useState(getWaveform());
+  const [visMode, setVisMode] = useState("frequency");
+  const canvasRef = useRef(null);
   
   const {
     notifications,
@@ -63,6 +87,144 @@ export default function Dashboard() {
       muted ? "Hệ thống âm thanh synthesizer đã được tắt tiếng." : "Hệ thống âm thanh synthesizer đã được kích hoạt lại."
     );
   };
+
+  const handleVolumeChange = (e) => {
+    const vol = parseFloat(e.target.value);
+    setVolumeLevel(vol);
+    setVolume(vol);
+  };
+
+  const handleWaveformChange = (wave) => {
+    setWaveformState(wave);
+    setWaveform(wave);
+    playBeepSound();
+  };
+
+  useEffect(() => {
+    if (activeTab !== "audio") return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    let animationId;
+    
+    // Set display resolution to match css dimensions
+    canvas.width = canvas.clientWidth || 400;
+    canvas.height = canvas.clientHeight || 150;
+    
+    const analyser = getAnalyser();
+    if (!analyser) return;
+    
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    
+    const draw = () => {
+      animationId = requestAnimationFrame(draw);
+      const width = canvas.width;
+      const height = canvas.height;
+      ctx.clearRect(0, 0, width, height);
+      
+      // Draw grid lines background for studio feeling
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.03)";
+      ctx.lineWidth = 1;
+      const gridSize = 20;
+      for (let x = 0; x < width; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < height; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+
+      if (visMode === "frequency") {
+        analyser.getByteFrequencyData(dataArray);
+        
+        const barWidth = (width / bufferLength) * 1.6;
+        let barHeight;
+        let x = 0;
+        
+        for (let i = 0; i < bufferLength; i++) {
+          barHeight = (dataArray[i] / 255) * height * 0.85;
+          if (barHeight > 0) {
+            const percent = i / bufferLength;
+            
+            // Generate glowing neon colors
+            // cyan (#00f5ff) to purple (#7b2fff) to pink (#ff006e)
+            let color;
+            if (percent < 0.5) {
+              // cyan to purple
+              const r = Math.floor(0 + percent * 2 * 123);
+              const g = Math.floor(245 - percent * 2 * 198);
+              const b = Math.floor(255);
+              color = `rgb(${r}, ${g}, ${b})`;
+            } else {
+              // purple to pink
+              const p = (percent - 0.5) * 2;
+              const r = Math.floor(123 + p * 132);
+              const g = Math.floor(47 - p * 47);
+              const b = Math.floor(255 - p * 145);
+              color = `rgb(${r}, ${g}, ${b})`;
+            }
+            
+            ctx.fillStyle = color;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = color;
+            
+            // Draw bar with slight rounded corner top
+            ctx.fillRect(x, height - barHeight, barWidth - 2, barHeight);
+          }
+          x += barWidth;
+        }
+      } else {
+        analyser.getByteTimeDomainData(dataArray);
+        
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = "#00f5ff";
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = "rgba(0, 245, 255, 0.8)";
+        ctx.beginPath();
+        
+        const sliceWidth = width / bufferLength;
+        let x = 0;
+        
+        for (let i = 0; i < bufferLength; i++) {
+          const v = dataArray[i] / 128.0;
+          const y = (v * height) / 2;
+          
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+          
+          x += sliceWidth;
+        }
+        
+        ctx.lineTo(width, height / 2);
+        ctx.stroke();
+      }
+    };
+    
+    draw();
+    
+    // Resize handler
+    const handleResize = () => {
+      if (canvasRef.current) {
+        canvasRef.current.width = canvasRef.current.clientWidth;
+        canvasRef.current.height = canvasRef.current.clientHeight;
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    
+    return () => {
+      cancelAnimationFrame(animationId);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [activeTab, visMode]);
 
   useEffect(() => {
     // Smooth scroll to content drawer on tab change, especially useful for mobile!
@@ -88,7 +250,8 @@ export default function Dashboard() {
     { id: "trophies", label: "TROPHY CABINET // DỰ ÁN", icon: <FiAward size={16} /> },
     { id: "seasons", label: "CAREER SEASONS // HÀNH TRÌNH", icon: <FiCalendar size={16} /> },
     { id: "transfer", label: "TRANSFER OFFER // LIÊN HỆ", icon: <FiTrendingUp size={16} /> },
-    { id: "notifications", label: "VIBELY NOTIFICATION // GIẢ LẬP", icon: <FiBell size={16} /> }
+    { id: "notifications", label: "VIBELY NOTIFICATION // GIẢ LẬP", icon: <FiBell size={16} /> },
+    { id: "audio", label: "SOUND ENGINE // PHÒNG THU ÂM", icon: <FiMusic size={16} /> }
   ];
 
   const handleFormChange = (e) => {
@@ -851,6 +1014,217 @@ export default function Dashboard() {
                       </div>
                     </div>
 
+                  </motion.div>
+                )}
+
+                {activeTab === "audio" && (
+                  <motion.div
+                    key="audio"
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    className="space-y-6"
+                  >
+                    <div className="pb-4 border-b border-white/5">
+                      <span className="font-mono text-xs text-[#00f5ff] text-glow-cyan font-bold">STADIUM SOUND ENGINE // [SYNTHESIZER]</span>
+                      <h3 className="fc-title-slanted text-3xl sm:text-4xl font-extrabold text-white mt-1 tracking-wider">
+                        BỘ GIẢ LẬP <span className="text-[#ffd700] text-glow-gold">ÂM THANH</span>
+                      </h3>
+                    </div>
+
+                    <p className="text-slate-300 text-xs sm:text-sm leading-relaxed font-sans font-medium">
+                      Hệ thống phát âm thanh kỹ thuật số thời gian thực được lập trình thuần túy bằng Web Audio API không phụ thuộc file asset ngoài. Nhấp vào bảng nhạc hiệu ứng và điều khiển cấu hình sóng bên dưới.
+                    </p>
+
+                    {/* 🎙️ Visualizer Waveform display */}
+                    <div className="p-5 rounded-2xl bg-black/60 border border-white/5 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest font-bold">
+                          TRỰC QUAN HÓA SÓNG ÂM (AUDIO SPECTRUM)
+                        </span>
+                        
+                        {/* Visualizer Modes */}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => { playBeepSound(); setVisMode("frequency"); }}
+                            onMouseEnter={() => playHoverSound()}
+                            className={`px-3 py-1 rounded-md text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                              visMode === "frequency"
+                                ? "bg-[#00f5ff]/20 border border-[#00f5ff]/40 text-[#00f5ff]"
+                                : "bg-transparent border border-white/5 text-slate-500 hover:text-white"
+                            }`}
+                          >
+                            TẦN SỐ (FREQUENCY)
+                          </button>
+                          <button
+                            onClick={() => { playBeepSound(); setVisMode("waveform"); }}
+                            onMouseEnter={() => playHoverSound()}
+                            className={`px-3 py-1 rounded-md text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                              visMode === "waveform"
+                                ? "bg-[#ff006e]/20 border border-[#ff006e]/40 text-[#ff006e]"
+                                : "bg-transparent border border-white/5 text-slate-500 hover:text-white"
+                            }`}
+                          >
+                            DẠNG SÓNG (OSCILLOSCOPE)
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="relative">
+                        <canvas
+                          ref={canvasRef}
+                          className="w-full h-36 bg-black/80 rounded-xl border border-white/10 shadow-[inset_0_0_20px_rgba(0,0,0,0.9)]"
+                        />
+                        <div className="absolute bottom-2 right-3 pointer-events-none font-mono text-[9px] text-slate-600 tracking-widest">
+                          DIGITAL OSCILLATOR FEEDBACK
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                      
+                      {/* Left controls column (5 cols) */}
+                      <div className="md:col-span-5 space-y-5">
+                        
+                        {/* Master volume control */}
+                        <div className="p-5 rounded-2xl bg-black/40 border border-white/5 space-y-4">
+                          <span className="block text-[10px] font-mono text-slate-400 uppercase tracking-widest font-bold pb-2 border-b border-white/5">
+                            ÂM LƯỢNG MASTER (VOLUME)
+                          </span>
+                          
+                          <div className="flex items-center gap-4">
+                            <button
+                              onClick={handleToggleMute}
+                              onMouseEnter={() => playHoverSound()}
+                              className={`p-3 rounded-xl border transition-all duration-300 cursor-pointer ${
+                                soundMuted
+                                  ? "bg-rose-500/10 border-rose-500/30 text-rose-400 hover:bg-rose-500/15"
+                                  : "bg-[#00f5ff]/10 border-[#00f5ff]/30 text-[#00f5ff] shadow-[0_0_12px_rgba(0,245,255,0.15)]"
+                              }`}
+                              title={soundMuted ? "Bật âm thanh" : "Tắt âm thanh"}
+                            >
+                              {soundMuted ? <FiVolumeX size={18} /> : <FiVolume2 size={18} />}
+                            </button>
+
+                            <div className="flex-1 flex flex-col gap-1.5">
+                              <div className="flex justify-between text-[10px] font-mono text-slate-400">
+                                <span>MỨC</span>
+                                <span className="font-bold text-[#00f5ff]">
+                                  {soundMuted ? "0" : Math.round(volumeLevel * 100)}%
+                                </span>
+                              </div>
+                              <input
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.05"
+                                value={volumeLevel}
+                                onChange={handleVolumeChange}
+                                disabled={soundMuted}
+                                className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[#00f5ff] disabled:opacity-30"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Synth oscillator waveform select */}
+                        <div className="p-5 rounded-2xl bg-black/40 border border-white/5 space-y-4">
+                          <span className="block text-[10px] font-mono text-slate-400 uppercase tracking-widest font-bold pb-2 border-b border-white/5">
+                            DẠNG SÓNG CƠ BẢN (WAVEFORM)
+                          </span>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            {[
+                              { id: "sine", label: "~ Sine (Êm)", color: "text-sky-400" },
+                              { id: "triangle", label: "▲ Triangle (Trầm)", color: "text-emerald-400" },
+                              { id: "sawtooth", label: "N Sawtooth (Bén)", color: "text-amber-400" },
+                              { id: "square", label: "■ Square (Retro)", color: "text-rose-400" }
+                            ].map((w) => {
+                              const isSelected = waveform === w.id;
+                              return (
+                                <button
+                                  key={w.id}
+                                  onClick={() => handleWaveformChange(w.id)}
+                                  onMouseEnter={() => playHoverSound()}
+                                  className={`py-2 px-3 rounded-lg text-[10px] font-mono font-bold transition-all border text-left cursor-pointer flex justify-between items-center ${
+                                    isSelected
+                                      ? "bg-[#7b2fff]/20 border-[#7b2fff]/50 text-white shadow-[0_0_10px_rgba(123,47,255,0.25)]"
+                                      : "bg-black/20 border-white/5 text-slate-500 hover:text-slate-300"
+                                  }`}
+                                >
+                                  <span className={w.color}>{w.label}</span>
+                                  {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-[#00f5ff] animate-ping" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          
+                          <p className="text-[10px] text-slate-500 font-mono leading-relaxed">
+                            * Ảnh hưởng trực tiếp đến chất âm của các hiệu ứng tiếng bíp, âm báo và chimes đếm ngược.
+                          </p>
+                        </div>
+
+                      </div>
+
+                      {/* Right triggers column (7 cols) */}
+                      <div className="md:col-span-7 p-5 rounded-2xl bg-black/40 border border-white/5 space-y-4">
+                        <span className="block text-[10px] font-mono text-slate-400 uppercase tracking-widest font-bold pb-2 border-b border-white/5">
+                          BẢNG ĐIỀU KHIỂN HIỆU ỨNG (SOUNDBOARD GRID)
+                        </span>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          {[
+                            { label: "Tiếng Còi", sub: "Whistle Ref", action: playWhistle, color: "hover:border-[#ffd700]/40 text-[#ffd700]" },
+                            { label: "Stadium Crowd", sub: "Goal Cheer", action: playCrowdGoal, color: "hover:border-emerald-400/40 text-emerald-400" },
+                            { label: "Celebration", sub: "Explosion Boom", action: playExplosionSound, color: "hover:border-rose-500/40 text-rose-500" },
+                            { label: "Kick Ball", sub: "Woosh Impact", action: playKickSound, color: "hover:border-cyan-400/40 text-cyan-400" },
+                            { label: "Slow-Mo", sub: "Frequency Drop", action: playSlowMoSound, color: "hover:border-indigo-400/40 text-indigo-400" },
+                            { label: "Lightning Zap", sub: "Zap Crackle", action: playLightningZap, color: "hover:border-amber-400/40 text-amber-400" },
+                            { label: "Beep Chime", sub: "UI Beep", action: playBeepSound, color: "hover:border-purple-400/40 text-purple-400" },
+                            { label: "Hover Sweep", sub: "Subtle Whoosh", action: playHoverSound, color: "hover:border-teal-400/40 text-teal-400" },
+                            { label: "Bass Thud", sub: "Bass Kick", action: playBassKick, color: "hover:border-fuchsia-400/40 text-fuchsia-400" }
+                          ].map((effect, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => {
+                                effect.action();
+                              }}
+                              onMouseEnter={() => playHoverSound()}
+                              className={`p-3 rounded-xl bg-black/50 border border-white/5 transition-all duration-300 flex flex-col items-start text-left cursor-pointer hover:scale-[1.03] hover:bg-black/80 hover:shadow-lg ${effect.color}`}
+                            >
+                              <span className="text-xs font-bold font-display tracking-wide">{effect.label}</span>
+                              <span className="text-[9px] font-mono text-slate-500 mt-1">{effect.sub}</span>
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Compound triggers */}
+                        <div className="pt-2 border-t border-white/5 grid grid-cols-2 gap-3">
+                          <button
+                            onClick={() => {
+                              playCountdownSound(3);
+                              setTimeout(() => playCountdownSound(2), 500);
+                              setTimeout(() => playCountdownSound(1), 1000);
+                            }}
+                            onMouseEnter={() => playHoverSound()}
+                            className="py-3 px-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-xs font-mono font-bold text-amber-400 transition-all duration-300 cursor-pointer text-center"
+                          >
+                            ⏱️ TEST COUNTDOWN (3S)
+                          </button>
+                          <button
+                            onClick={() => {
+                              playNotificationChime("achievement");
+                            }}
+                            onMouseEnter={() => playHoverSound()}
+                            className="py-3 px-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-xs font-mono font-bold text-purple-400 transition-all duration-300 cursor-pointer text-center"
+                          >
+                            🌟 TEST ACHIEVE CHIME
+                          </button>
+                        </div>
+                      </div>
+
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
