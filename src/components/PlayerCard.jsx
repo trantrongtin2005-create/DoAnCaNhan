@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, useMotionValue, useTransform, useSpring } from "framer-motion";
 import { FiCpu } from "react-icons/fi";
 import { playHoverSound } from "../utils/audioSynth";
+import playerPhoto from "../assets/tin.jpg";
 
 export default function PlayerCard() {
   // Dynamic holographic positioning variables
@@ -59,11 +60,16 @@ export default function PlayerCard() {
     });
   };
 
-  // Three Core attributes
-  const devStats = [
+  // Six Ultimate Team attributes
+  const devStatsLeft = [
     { label: "PAC", val: 99 },
-    { label: "SHO", val: 99 },
-    { label: "PAS", val: 99 }
+    { label: "SHO", val: 95 },
+    { label: "PAS", val: 98 }
+  ];
+  const devStatsRight = [
+    { label: "DRI", val: 99 },
+    { label: "DEF", val: 90 },
+    { label: "PHY", val: 92 }
   ];
 
   return (
@@ -103,7 +109,7 @@ export default function PlayerCard() {
             <div className="absolute inset-0 z-0 pointer-events-none bg-[radial-gradient(ellipse_at_bottom,rgba(255,215,0,0.06)_0%,transparent_70%)] animate-pulse" />
 
             {/* Top Row: Overall Rating & Position */}
-            <div className="flex justify-between items-start pt-4 relative z-10" style={{ transform: "translateZ(30px)" }}>
+            <div className="flex justify-between items-start pt-4 relative z-20" style={{ transform: "translateZ(30px)" }}>
               <div className="flex flex-col items-center">
                 <span className="font-display text-4xl sm:text-5xl font-black text-[#ffd700] text-glow-gold leading-none drop-shadow-[0_0_12px_rgba(255,215,0,0.6)]">
                   99
@@ -123,46 +129,66 @@ export default function PlayerCard() {
               </div>
             </div>
 
-            {/* Center Row: Glowing tech avatar */}
-            <div className="flex justify-center items-center my-1 relative z-10" style={{ transform: "translateZ(45px)" }}>
-              <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full border border-[#00f5ff]/30 bg-gradient-to-t from-[#00f5ff]/20 via-[#7b2fff]/10 to-transparent flex items-center justify-center overflow-hidden relative group-hover:scale-108 transition-transform duration-300">
-                {/* Glowing neon athlete outline SVG */}
-                <svg
-                  viewBox="0 0 100 100"
-                  className="w-24 h-24 sm:w-28 sm:h-28 text-[#00f5ff] fill-current drop-shadow-[0_0_15px_rgba(0,245,255,0.7)] animate-pulse"
-                >
-                  <path d="M50,15 C42,15 35,22 35,30 C35,38 42,45 50,45 C58,45 65,38 65,30 C65,22 58,15 50,15 Z M50,50 C32,50 15,62 15,78 C15,84 20,90 28,90 L72,90 C80,90 85,84 85,78 C85,62 68,50 50,50 Z" />
-                </svg>
-              </div>
+            {/* Center Row: Premium Football Game Player Card Image styling */}
+            <div 
+              className="absolute top-4 right-1 w-[180px] h-[210px] sm:w-[190px] sm:h-[230px] z-10 pointer-events-none overflow-hidden" 
+              style={{ 
+                transform: "translateZ(45px)",
+                maskImage: "linear-gradient(to bottom, black 65%, rgba(0,0,0,0.3) 80%, transparent 100%)",
+                WebkitMaskImage: "linear-gradient(to bottom, black 65%, rgba(0,0,0,0.3) 80%, transparent 100%)"
+              }}
+            >
+              <img 
+                src={playerPhoto} 
+                alt="Player Card Avatar"
+                className="w-full h-full object-cover object-[30%_18%] scale-110 contrast-[1.05] brightness-[1.05] drop-shadow-[0_0_15px_rgba(0,245,255,0.4)]"
+              />
             </div>
 
+            {/* Spacer for player image positioning */}
+            <div className="h-24 sm:h-28" />
+
             {/* Player Name Banner */}
-            <div className="text-center relative z-10" style={{ transform: "translateZ(35px)" }}>
+            <div className="text-center relative z-20 mt-4" style={{ transform: "translateZ(35px)" }}>
               <h3 className="fc-title-slanted text-2xl sm:text-3xl font-black text-white text-glow-cyan tracking-widest drop-shadow-[0_0_8px_rgba(0,245,255,0.3)]">
                 TÍN
               </h3>
               <div className="w-36 h-[2px] bg-gradient-to-r from-transparent via-[#ffd700] to-transparent mx-auto my-2" />
             </div>
 
-            {/* Three Core Attributes */}
+            {/* Six Football Card Attributes */}
             <div 
-              className="grid grid-cols-3 gap-x-2 pt-3 pb-3 relative z-10 border border-white/5 bg-black/60 p-3 rounded-xl border-cyan-500/10 divide-x divide-white/5 text-center"
+              className="grid grid-cols-2 gap-x-6 gap-y-1 pt-3 pb-3 relative z-20 border border-white/5 bg-black/60 p-3 rounded-xl border-cyan-500/10 text-center"
               style={{ transform: "translateZ(25px)" }}
             >
-              {devStats.map((stat, idx) => (
-                <div key={idx} className="flex flex-col items-center">
-                  <span className="text-[10px] font-mono text-slate-400 font-semibold tracking-wider">
-                    {stat.label}
-                  </span>
-                  <span className="text-xl font-display font-black text-[#ffd700] text-glow-gold drop-shadow-[0_0_8px_#ffd700] mt-0.5">
-                    {stat.val}
-                  </span>
-                </div>
-              ))}
+              <div className="grid grid-cols-3 divide-x divide-white/5">
+                {devStatsLeft.map((stat, idx) => (
+                  <div key={idx} className="flex flex-col items-center">
+                    <span className="text-[9px] font-mono text-slate-400 font-semibold tracking-wider">
+                      {stat.label}
+                    </span>
+                    <span className="text-lg font-display font-black text-[#ffd700] text-glow-gold drop-shadow-[0_0_8px_#ffd700] mt-0.5">
+                      {stat.val}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-3 divide-x divide-white/5">
+                {devStatsRight.map((stat, idx) => (
+                  <div key={idx} className="flex flex-col items-center">
+                    <span className="text-[9px] font-mono text-slate-400 font-semibold tracking-wider">
+                      {stat.label}
+                    </span>
+                    <span className="text-lg font-display font-black text-[#ffd700] text-glow-gold drop-shadow-[0_0_8px_#ffd700] mt-0.5">
+                      {stat.val}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Micro chip telemetry detail */}
-            <div className="flex justify-between items-center text-[8px] font-mono text-slate-500 relative z-10 px-2 pb-1">
+            <div className="flex justify-between items-center text-[8px] font-mono text-slate-500 relative z-20 px-2 pb-1">
               <span>GOAT EDITION</span>
               <span>VER: 2026.TDC</span>
             </div>
