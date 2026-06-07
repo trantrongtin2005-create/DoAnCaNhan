@@ -134,14 +134,14 @@ export default function PlayerCard() {
               className="absolute top-4 right-1 w-[180px] h-[210px] sm:w-[190px] sm:h-[230px] z-10 pointer-events-none overflow-hidden" 
               style={{ 
                 transform: "translateZ(45px)",
-                maskImage: "linear-gradient(to bottom, black 65%, rgba(0,0,0,0.3) 80%, transparent 100%)",
-                WebkitMaskImage: "linear-gradient(to bottom, black 65%, rgba(0,0,0,0.3) 80%, transparent 100%)"
+                maskImage: "radial-gradient(circle at 45% 38%, black 45%, rgba(0,0,0,0.6) 65%, rgba(0,0,0,0.15) 80%, transparent 100%)",
+                WebkitMaskImage: "radial-gradient(circle at 45% 38%, black 45%, rgba(0,0,0,0.6) 65%, rgba(0,0,0,0.15) 80%, transparent 100%)"
               }}
             >
               <img 
                 src={playerPhoto} 
                 alt="Player Card Avatar"
-                className="w-full h-full object-cover object-[30%_18%] scale-110 contrast-[1.05] brightness-[1.05] drop-shadow-[0_0_15px_rgba(0,245,255,0.4)]"
+                className="w-full h-full object-cover object-[30%_18%] scale-110 contrast-[1.08] brightness-[1.02] saturate-[1.05] drop-shadow-[0_0_15px_rgba(0,245,255,0.4)]"
               />
             </div>
 
